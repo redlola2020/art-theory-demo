@@ -1,0 +1,6 @@
+{
+  "name": "艺术概论",
+  "description": "探讨艺术边界与观点的互动式网页",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,26 @@
+### Dependencies ###
+node_modules/
+
+### Build output ###
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+### Environment ###
+.env
+.env.*
+!.env.example
+*.local
+
+### Logs ###
+*.log
+npm-debug.log*
+
+### Editors / OS ###
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
