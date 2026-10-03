@@ -139,17 +139,22 @@ export function subscribeVotes(
 
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let totalAccepted = 0;
+  let totalParseFailures = 0;
+  let polls = 0;
 
   const poll = async () => {
     try {
       const response = await fetch(`${RELAY_BASE}/${topicFor(room)}/json?poll=1&since=12h`);
       if (!response.ok) throw new Error(`relay responded ${response.status}`);
       const body = await response.text();
+      polls += 1;
+      let lines = 0;
       let frames = 0;
-      let accepted = 0;
 
       body.split('\n').forEach((line) => {
         if (!line.trim()) return;
+        lines += 1;
         try {
           const envelope = JSON.parse(line) as { id?: string; event?: string; message?: string };
           const id = envelope.id ?? line;
@@ -159,17 +164,21 @@ export function subscribeVotes(
           frames += 1;
           const payload = JSON.parse(envelope.message) as VotePayload;
           if (payload?.t === 'v' && typeof payload.q === 'number' && typeof payload.o === 'number') {
-            accepted += 1;
+            totalAccepted += 1;
             onVote(payload);
           }
         } catch {
-          // Skip frames that are not vote JSON.
+          totalParseFailures += 1;
         }
       });
 
-      onStatus?.('live', `${body.length} 字节 / 新增投票 ${accepted}（本批投票帧 ${frames}）`);
+      const detail = `第${polls}次 字节${body.length} 行${lines} 帧${frames} 累计投票${totalAccepted} 解析失败${totalParseFailures}`;
+      console.log('[vote-poll]', detail, body.slice(0, 200));
+      onStatus?.('live', detail);
     } catch (error) {
-      onStatus?.('error', error instanceof Error ? error.message : String(error));
+      const detail = error instanceof Error ? error.message : String(error);
+      console.warn('[vote-poll-error]', detail);
+      onStatus?.('error', detail);
     } finally {
       if (!stopped) {
         timer = setTimeout(poll, intervalMs);
