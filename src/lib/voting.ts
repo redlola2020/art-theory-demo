@@ -120,37 +120,62 @@ export async function publishVote(room: string, questionIndex: number, option: n
 
 /**
  * Subscribe to every vote cast in the room.
+ *
+ * The relay is polled rather than streamed. Streaming (`/sse`) is blocked by common
+ * ad-blocker filter lists, and polling also re-reads votes that were cast while the
+ * presenter was still connecting, so nothing is lost. Duplicate frames are dropped
+ * by message id.
+ *
  * Returns an unsubscribe function.
  */
 export function subscribeVotes(
   room: string,
   onVote: (vote: VotePayload) => void,
   onStatus?: (status: VoteStatus) => void,
+  intervalMs = 2500,
 ): () => void {
   const seen = new Set<string>();
-  const source = new EventSource(`${RELAY_BASE}/${topicFor(room)}/sse`);
-
   onStatus?.('connecting');
-  source.onopen = () => onStatus?.('live');
-  source.onerror = () => onStatus?.('error');
 
-  source.onmessage = (event: MessageEvent<string>) => {
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const poll = async () => {
     try {
-      const envelope = JSON.parse(event.data) as { id?: string; message?: string };
-      const id = envelope.id ?? event.data;
-      // EventSource reconnects replay recent messages, so ignore ones we have seen.
-      if (seen.has(id)) return;
-      seen.add(id);
+      const response = await fetch(`${RELAY_BASE}/${topicFor(room)}/json?poll=1&since=12h`);
+      if (!response.ok) throw new Error(`relay responded ${response.status}`);
+      const body = await response.text();
+      onStatus?.('live');
 
-      if (typeof envelope.message !== 'string') return;
-      const payload = JSON.parse(envelope.message) as VotePayload;
-      if (payload?.t === 'v' && typeof payload.q === 'number' && typeof payload.o === 'number') {
-        onVote(payload);
-      }
+      body.split('\n').forEach((line) => {
+        if (!line.trim()) return;
+        try {
+          const envelope = JSON.parse(line) as { id?: string; event?: string; message?: string };
+          const id = envelope.id ?? line;
+          if (seen.has(id)) return;
+          seen.add(id);
+          if (envelope.event !== 'message' || typeof envelope.message !== 'string') return;
+          const payload = JSON.parse(envelope.message) as VotePayload;
+          if (payload?.t === 'v' && typeof payload.q === 'number' && typeof payload.o === 'number') {
+            onVote(payload);
+          }
+        } catch {
+          // Skip frames that are not vote JSON.
+        }
+      });
     } catch {
-      // Non-vote traffic (or malformed frames) is ignored on purpose.
+      onStatus?.('error');
+    } finally {
+      if (!stopped) {
+        timer = setTimeout(poll, intervalMs);
+      }
     }
   };
 
-  return () => source.close();
+  void poll();
+
+  return () => {
+    stopped = true;
+    if (timer) clearTimeout(timer);
+  };
 }
