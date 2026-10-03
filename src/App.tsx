@@ -2,9 +2,18 @@ import React, { useState } from 'react';
 import HomePage from './components/HomePage';
 import Chapter1 from './components/Chapter1';
 import Chapter2 from './components/Chapter2';
+import VotePage from './components/VotePage';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'home' | 'chapter1' | 'chapter2' | 'coming_soon'>('home');
+
+  // Scanning the QR code opens the same site with ?vote=<room>&q=<question>.
+  const query = new URLSearchParams(window.location.search);
+  const voteRoom = query.get('vote');
+  if (voteRoom) {
+    const parsed = Number.parseInt(query.get('q') ?? '0', 10);
+    return <VotePage room={voteRoom} questionIndex={Number.isNaN(parsed) ? 0 : parsed} />;
+  }
 
   const handleNavigate = (chapter: number) => {
     if (chapter === 1) {
