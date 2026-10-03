@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>艺术概论实验 Demo</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080909;color:#fff;font-family:"Microsoft YaHei",sans-serif}#app{width:100vw;height:100vh;position:relative}.page{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background-size:cover;background-position:center}.page.active{display:flex}.page:before{content:"";position:absolute;inset:0;background:rgba(0,0,0,.48)}.content{position:relative;text-align:center;z-index:2}.num{position:absolute;left:32px;top:28px;color:#ff4fd8;font-size:22px;letter-spacing:.08em}.dots{position:absolute;right:35px;top:35px}.dots i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ddd;margin:0 5px}.dots i.on{background:#ff4fd8}.title{font-size:clamp(36px,5vw,72px);letter-spacing:.3em;font-weight:300;color:#ff55dc}.btn{margin-top:50px;padding:18px 70px;border:0;border-radius:50px;background:#ff40d0;color:#111;font-size:28px;cursor:pointer;box-shadow:0 0 40px #ff40d0}.particle{position:absolute;inset:0}.gold{font-size:70px;letter-spacing:.15em;color:#ffd66b;text-shadow:0 0 30px #ffd66b;opacity:0;animation:show 5s forwards}@keyframes show{0%{opacity:0}100%{opacity:1}}
+</style>
+</head>
+<body>
+<div id="app">
+<section class="page active" id="p1" style="background-image:url('background.png')"><span class="num">01 / 04</span><div class="dots"><i class="on"></i><i></i><i></i><i></i></div><div class="content"><button class="btn" onclick="next()">开始</button></div></section>
+<section class="page" id="p2" style="background-image:url('background.png')"><span class="num">02 / 04</span><div class="dots"><i></i><i class="on"></i><i></i><i></i></div><div class="content"><h1 class="title">艺术是什么？</h1></div></section>
+<section class="page" id="p3" style="background-image:url('background.png')"><span class="num">03 / 04</span><div class="dots"><i></i><i></i><i class="on"></i><i></i></div><canvas class="particle" id="c"></canvas><div class="content"><h1 class="gold">No Answer</h1></div></section>
+<section class="page" id="p4" style="background-image:url('background.png')"><span class="num">04 / 04</span><div class="dots"><i></i><i></i><i></i><i class="on"></i></div><div class="content"><h1 class="title">你的观点<br>必须能够被解释</h1></div></section>
+</div>
+<script>
+let n=0;let pages=document.querySelectorAll('.page');function next(){if(n<3){pages[n].classList.remove('active');n++;pages[n].classList.add('active')}}document.addEventListener('keydown',e=>{if(e.code==='Space')next()});document.getElementById('p2').onclick=next;document.getElementById('p3').onclick=next;
+let c=document.getElementById('c'),x=c.getContext('2d');function resize(){c.width=innerWidth;c.height=innerHeight}resize();onresize=resize;let a=Array.from({length:180},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight})) ;let start=Date.now();function draw(){x.clearRect(0,0,c.width,c.height);let p=Math.min((Date.now()-start)/5000,1);a.forEach(q=>{q.x+=(innerWidth/2-q.x)*.003;q.y+=(innerHeight/2-q.y)*.003;x.fillStyle='rgba(255,210,100,.8)';x.beginPath();x.arc(q.x,q.y,2,0,7);x.fill()});requestAnimationFrame(draw)}draw();
+</script></body></html>

@@ -1,0 +1,18 @@
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.jfif binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.svg text
+*.mp4 binary
+*.mov binary
+*.pdf binary
+*.image binary
+
+# Keep lockfiles out of diffs and language stats
+package-lock.json -diff linguist-generated=true
