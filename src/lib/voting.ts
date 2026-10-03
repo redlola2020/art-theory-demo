@@ -131,7 +131,7 @@ export async function publishVote(room: string, questionIndex: number, option: n
 export function subscribeVotes(
   room: string,
   onVote: (vote: VotePayload) => void,
-  onStatus?: (status: VoteStatus) => void,
+  onStatus?: (status: VoteStatus, detail?: string) => void,
   intervalMs = 2500,
 ): () => void {
   const seen = new Set<string>();
@@ -145,7 +145,8 @@ export function subscribeVotes(
       const response = await fetch(`${RELAY_BASE}/${topicFor(room)}/json?poll=1&since=12h`);
       if (!response.ok) throw new Error(`relay responded ${response.status}`);
       const body = await response.text();
-      onStatus?.('live');
+      let frames = 0;
+      let accepted = 0;
 
       body.split('\n').forEach((line) => {
         if (!line.trim()) return;
@@ -155,16 +156,20 @@ export function subscribeVotes(
           if (seen.has(id)) return;
           seen.add(id);
           if (envelope.event !== 'message' || typeof envelope.message !== 'string') return;
+          frames += 1;
           const payload = JSON.parse(envelope.message) as VotePayload;
           if (payload?.t === 'v' && typeof payload.q === 'number' && typeof payload.o === 'number') {
+            accepted += 1;
             onVote(payload);
           }
         } catch {
           // Skip frames that are not vote JSON.
         }
       });
-    } catch {
-      onStatus?.('error');
+
+      onStatus?.('live', `${body.length} 字节 / 新增投票 ${accepted}（本批投票帧 ${frames}）`);
+    } catch (error) {
+      onStatus?.('error', error instanceof Error ? error.message : String(error));
     } finally {
       if (!stopped) {
         timer = setTimeout(poll, intervalMs);

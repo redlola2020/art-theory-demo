@@ -35,6 +35,7 @@ const VotingSlide: React.FC<VotingSlideProps> = ({ data, index, isActive }) => {
   const [room, setRoom] = useState<string>(() => getRoom());
   const [ballots, setBallots] = useState<Ballots>({});
   const [status, setStatus] = useState<VoteStatus>('connecting');
+  const [statusDetail, setStatusDetail] = useState<string>('');
 
   // Live-tally every vote that arrives for this session.
   useEffect(() => {
@@ -49,7 +50,10 @@ const VotingSlide: React.FC<VotingSlideProps> = ({ data, index, isActive }) => {
           return { ...previous, [vote.q]: forQuestion };
         });
       },
-      setStatus,
+      (next, detail) => {
+        setStatus(next);
+        setStatusDetail(detail ?? '');
+      },
     );
     return unsubscribe;
   }, [room, isActive]);
@@ -132,6 +136,7 @@ const VotingSlide: React.FC<VotingSlideProps> = ({ data, index, isActive }) => {
                 <Radio className="w-3.5 h-3.5" />
                 {status === 'live' ? '已连接，实时接收投票' : status === 'error' ? '连接中断，正在重试' : '正在连接…'}
               </p>
+              {statusDetail && <p className="text-[11px] text-gray-500 mt-1">{statusDetail}</p>}
             </div>
           </div>
 
